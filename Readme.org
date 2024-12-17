@@ -1,0 +1,2 @@
+* Tex
+Inspired by [[https://hackage.haskell.org/package/HaTeX][HaTeX]]

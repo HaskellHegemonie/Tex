@@ -28,13 +28,15 @@ data LTX = Sum LTX LTX
          | Asinh LTX
          | Acosh LTX
          | Atanh LTX
+         | PlusMinus LTX LTX
          | Special String
          | C String
          | Variable String
          -- | LTX :+ LTX
-       
+
 instance KnownSymbol sym => IsLabel sym LTX where
   fromLabel = Variable $ symbolVal (Proxy @sym)
+
 instance Show LTX where
   show  = \case
     Sum x (Negate y) -> printf "%s - %s" (show x) (show y)
@@ -47,6 +49,8 @@ instance Show LTX where
     Signum x -> undefined
     Exp x -> printf "{\\rm e}^{%s}" (show x)
     ExpFun x -> printf "\\exp\\left(%s\\right)" (show x)
+    Power x (Recip (C "2")) -> printf "\\sqrt{%s}" (show x)
+    Power x (Recip y) -> printf "\\sqrt[%s]{%s}" (show y) (show x)
     Power x y -> printf "%s^{%s}" (show x) (show y)
     Ln x -> printf "\\ln\\left(%s\\right)" (show x)
     LogBase x y -> printf "\\log_{%s}\\left(%s\\right)" (show x) (show y)
@@ -61,11 +65,12 @@ instance Show LTX where
     Asinh x -> printf "\\sinh^{-1}\\left(%s\\right)" (show x)
     Acosh x -> printf "\\cosh^{-1}\\left(%s\\right)" (show x)
     Atanh x -> printf "\\tanh^{-1}\\left(%s\\right)" (show x)
+    PlusMinus x y -> printf "%s \\pm %s" (show x) (show y)
     Special x -> x
     C x -> x
     Variable x -> x
     -- a :+ ib -> printf "%s + \\mathbf{ib}\\cdot%s" (show a) (show ib)
-  
+
 instance Num LTX where
   (+) = Sum
   negate = Negate
@@ -94,7 +99,16 @@ instance Floating LTX where
   asinh = Asinh
   acosh = Acosh
   atanh = Atanh
-  
+
+class Tex a where
+  (±) :: a -> a -> a
+
+infixl 6 ±
+
+instance Tex LTX where
+  (±) = PlusMinus
+
+
 n :: Num a => a -> a
 n = negate
 
