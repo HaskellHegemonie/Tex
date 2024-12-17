@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE LambdaCase #-}
-module Test where
+module Tex where
 import Text.Printf
 import GHC.OverloadedLabels
 import GHC.TypeLits
@@ -16,6 +16,7 @@ data LTX = Sum LTX LTX
          | ExpFun LTX
          | Power LTX LTX
          | Ln LTX
+         | LogBase LTX LTX
          | Sin LTX
          | Cos LTX
          | Tan LTX
@@ -30,7 +31,7 @@ data LTX = Sum LTX LTX
          | Special String
          | C String
          | Variable String
-         | LTX :+ LTX
+         -- | LTX :+ LTX
        
 instance KnownSymbol sym => IsLabel sym LTX where
   fromLabel = Variable $ symbolVal (Proxy @sym)
@@ -48,6 +49,7 @@ instance Show LTX where
     ExpFun x -> printf "\\exp\\left(%s\\right)" (show x)
     Power x y -> printf "%s^{%s}" (show x) (show y)
     Ln x -> printf "\\ln\\left(%s\\right)" (show x)
+    LogBase x y -> printf "\\log_{%s}\\left(%s\\right)" (show x) (show y)
     Sin x -> printf "\\sin\\left(%s\\right)" (show x)
     Cos x -> printf "\\cos\\left(%s\\right)" (show x)
     Tan x -> printf "\\tan\\left(%s\\right)" (show x)
@@ -62,7 +64,7 @@ instance Show LTX where
     Special x -> x
     C x -> x
     Variable x -> x
-    a :+ ib -> printf "%s + \\mathbf{ib}\\cdot%s" (show a) (show ib)
+    -- a :+ ib -> printf "%s + \\mathbf{ib}\\cdot%s" (show a) (show ib)
   
 instance Num LTX where
   (+) = Sum
@@ -81,6 +83,7 @@ instance Floating LTX where
   exp = Exp
   (**) = Power
   log = Ln
+  logBase = LogBase
   sin = Sin
   cos = Cos
   asin = Asin
@@ -92,7 +95,11 @@ instance Floating LTX where
   acosh = Acosh
   atanh = Atanh
   
-
+n :: Num a => a -> a
 n = negate
+
+r :: Fractional a => a -> a
 r = recip
+
+ln :: Floating a => a -> a
 ln = log
