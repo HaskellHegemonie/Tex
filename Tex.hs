@@ -36,10 +36,16 @@ data LTX = Sum LTX LTX
          | Acosh LTX
          | Atanh LTX
          | PlusMinus LTX LTX
-         | Special String
          | Subscript LTX LTX
          | Supscript LTX LTX
          | Laminate LTX LTX -- TODO: Eliminate
+         | Csc LTX
+         | Sec LTX
+         | Cot LTX
+         | Acsc LTX
+         | Asec LTX
+         | Acot LTX
+         | Special String
          | C String
          | Variable String
          | LTX :+ LTX
@@ -54,12 +60,14 @@ data Paren = S | M | P
 
 paren M = \case
   x@(Sum _ _) -> printf "\\left(%s\\right)" $ show x
+  x@(Negate _) -> printf "\\left(%s\\right)" $ show x
   x -> show x
 
 paren P = \case
-  x@(Sum _ _) -> printf "\\left(%s\\right)" $ show x
-  x@(Mult _ _) -> printf "\\left(%s\\right)" $ show x
-  x -> show x
+  Special s -> s
+  C x -> x
+  Variable v -> v
+  x -> printf "\\left(%s\\right)" $ show x
 
 paren _ = \case
   Special s -> s
@@ -98,6 +106,12 @@ instance Show LTX where
     Subscript x y -> printf "%s_{%s}" (show x) (show y)
     Supscript x y -> printf "%s^{%s}" (show x) (show y)
     Laminate x y -> printf "%s %s" (show x) (show y)
+    Csc x -> printf "\\csc\\left(%s\\right)" (show x) 
+    Sec x -> printf "\\sec\\left(%s\\right)" (show x)
+    Cot x -> printf "\\cot\\left(%s\\right)" (show x)
+    Acsc x -> printf "\\csc^{-1}\\left(%s\\right)" (show x)
+    Asec x -> printf "\\sec^{-1}\\left(%s\\right)" (show x)
+    Acot x -> printf "\\cot^{-1}\\left(%s\\right)" (show x)
     Special x -> x
     C x -> x
     Variable x -> x
@@ -124,6 +138,7 @@ instance Floating LTX where
   logBase = LogBase
   sin = Sin
   cos = Cos
+  tan = Tan
   asin = Asin
   acos = Acos
   atan = Atan
@@ -149,3 +164,16 @@ instance Tex LTX where
   (↑) = Supscript
   (↓) = Subscript
   (⍪) = Laminate
+
+instance Trig LTX where
+  csc = Csc
+  sec = Sec
+  cot = Cot
+
+  acsc = Acsc
+  asec = Asec
+  acot = Acot
+
+generate :: [LTX] -> String
+generate = concatMap (\x -> printf "\\[ %s \\]\n" $ show x)
+generate_ = putStr . generate
