@@ -16,3 +16,17 @@ piTest = 3 * r 2 * pi :: LTX
 piTest' = 3 * pi * r 2 :: LTX
 piTest'' = pi * 3 * r 2 :: LTX
 piTest''' = pi * (3 * r 2) :: LTX
+
+
+distri x = (2 * x) * (1 + 5)
+distriGen = distri #x :: LTX
+
+
+powTest = 2 * 5 ** (pi * r 2 * 3) :: LTX
+powTest' = (2 * 5) ** (pi * r 2 * 3) :: LTX
+
+test = exp (0 :+ pi)
+
+
+sigma k a c = #Σ ↓ 0 ↑ k ⍪ a ↓ k * c ↓ k -- Σ as a function?
+sigmaGen = aoeu #k #a #c :: LTX

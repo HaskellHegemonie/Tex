@@ -1,6 +1,13 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE LambdaCase #-}
-module Tex where
+{-# LANGUAGE FunctionalDependencies #-}
+module Tex
+  ( module TexClasses
+  , module Tex
+  , module GHC.OverloadedLabels
+           )where
+import TexClasses
 import Text.Printf
 import GHC.OverloadedLabels
 import GHC.TypeLits
@@ -30,20 +37,42 @@ data LTX = Sum LTX LTX
          | Atanh LTX
          | PlusMinus LTX LTX
          | Special String
+         | Subscript LTX LTX
+         | Supscript LTX LTX
+         | Laminate LTX LTX -- TODO: Eliminate
          | C String
          | Variable String
-         -- | LTX :+ LTX
+         | LTX :+ LTX
+
+infixl 6 :+
 
 instance KnownSymbol sym => IsLabel sym LTX where
   fromLabel = Variable $ symbolVal (Proxy @sym)
 
+data Paren = S | M | P
+  -- x@(Mult _ _) -> printf "\\left(%s\\right)" $ show x
+
+paren M = \case
+  x@(Sum _ _) -> printf "\\left(%s\\right)" $ show x
+  x -> show x
+
+paren P = \case
+  x@(Sum _ _) -> printf "\\left(%s\\right)" $ show x
+  x@(Mult _ _) -> printf "\\left(%s\\right)" $ show x
+  x -> show x
+
+paren _ = \case
+  Special s -> s
+  C x -> x
+  Variable v -> v
+  
 instance Show LTX where
   show  = \case
     Sum x (Negate y) -> printf "%s - %s" (show x) (show y)
     Sum x y -> printf "%s + %s" (show x) (show y)
     Negate x -> printf "- %s" (show x)
     Mult x (Recip y) -> printf "\\frac{%s}{%s}" (show x) (show y)
-    Mult x y -> printf "%s \\cdot %s" (show x) (show y)
+    Mult x y -> printf "%s \\cdot %s" (paren M x) (paren M y)
     Recip x -> printf "\\frac{1}{%s}" (show x)
     Abs x -> printf "\\left| %s \\right|" (show x)
     Signum x -> undefined
@@ -51,7 +80,7 @@ instance Show LTX where
     ExpFun x -> printf "\\exp\\left(%s\\right)" (show x)
     Power x (Recip (C "2")) -> printf "\\sqrt{%s}" (show x)
     Power x (Recip y) -> printf "\\sqrt[%s]{%s}" (show y) (show x)
-    Power x y -> printf "%s^{%s}" (show x) (show y)
+    Power x y -> printf "%s^{%s}" (paren P x) (show y)
     Ln x -> printf "\\ln\\left(%s\\right)" (show x)
     LogBase x y -> printf "\\log_{%s}\\left(%s\\right)" (show x) (show y)
     Sin x -> printf "\\sin\\left(%s\\right)" (show x)
@@ -66,10 +95,14 @@ instance Show LTX where
     Acosh x -> printf "\\cosh^{-1}\\left(%s\\right)" (show x)
     Atanh x -> printf "\\tanh^{-1}\\left(%s\\right)" (show x)
     PlusMinus x y -> printf "%s \\pm %s" (show x) (show y)
+    Subscript x y -> printf "%s_{%s}" (show x) (show y)
+    Supscript x y -> printf "%s^{%s}" (show x) (show y)
+    Laminate x y -> printf "%s %s" (show x) (show y)
     Special x -> x
     C x -> x
     Variable x -> x
-    -- a :+ ib -> printf "%s + \\mathbf{ib}\\cdot%s" (show a) (show ib)
+    (C "0") :+ ib -> printf "{\\rm i}\\cdot%s" (show ib)
+    a :+ ib -> printf "%s + {\\rm i}\\cdot%s" (show a) (show ib)
 
 instance Num LTX where
   (+) = Sum
@@ -100,15 +133,6 @@ instance Floating LTX where
   acosh = Acosh
   atanh = Atanh
 
-class Tex a where
-  (±) :: a -> a -> a
-
-infixl 6 ±
-
-instance Tex LTX where
-  (±) = PlusMinus
-
-
 n :: Num a => a -> a
 n = negate
 
@@ -117,3 +141,11 @@ r = recip
 
 ln :: Floating a => a -> a
 ln = log
+
+instance PM LTX LTX where
+  (±) = PlusMinus
+
+instance Tex LTX where
+  (↑) = Supscript
+  (↓) = Subscript
+  (⍪) = Laminate
