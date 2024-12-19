@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE LambdaCase #-}
@@ -8,10 +9,14 @@ module Tex
   , module GHC.OverloadedLabels
            )where
 import TexClasses
+import Data.List
 import Text.Printf
 import GHC.OverloadedLabels
 import GHC.TypeLits
 import Data.Proxy
+
+instance KnownSymbol s => IsLabel s String where
+  fromLabel = symbolVal (Proxy @s)
 
 data LTX = Sum LTX LTX
          | Negate LTX
@@ -45,9 +50,14 @@ data LTX = Sum LTX LTX
          | Acsc LTX
          | Asec LTX
          | Acot LTX
+         | Sigma LTX LTX LTX (LTX -> LTX)
+         | APi LTX LTX LTX (LTX -> LTX)
+         | IntegralBound LTX LTX LTX (LTX -> LTX)
+         | Integral (LTX -> LTX) LTX
          | Special String
          | C String
          | Variable String
+         | Fun String [LTX] LTX
          | LTX :+ LTX
 
 infixl 6 :+
@@ -112,9 +122,14 @@ instance Show LTX where
     Acsc x -> printf "\\csc^{-1}\\left(%s\\right)" (show x)
     Asec x -> printf "\\sec^{-1}\\left(%s\\right)" (show x)
     Acot x -> printf "\\cot^{-1}\\left(%s\\right)" (show x)
+    Sigma var down up fun -> printf "\\sum_{%s}^{%s} %s" (show down) (show up) (show $ fun var)
+    APi var down up fun -> printf "\\prod_{%s}^{%s} %s" (show down) (show up) (show $ fun var)
+    Integral f x -> printf "\\int %s d%s" (show $ f x) (show x)
+    IntegralBound var down up fun ->  printf "\\int_{%s}^{%s} %s d%s" (show down) (show up) (show $ fun var) (show var)
     Special x -> x
     C x -> x
     Variable x -> x
+    Fun name args def -> printf "%s(%s) = %s" name (intercalate "," $ map show args) (show def)
     (C "0") :+ ib -> printf "{\\rm i}\\cdot%s" (show ib)
     a :+ ib -> printf "%s + {\\rm i}\\cdot%s" (show a) (show ib)
 
@@ -147,6 +162,16 @@ instance Floating LTX where
   asinh = Asinh
   acosh = Acosh
   atanh = Atanh
+
+instance Enum LTX where
+  toEnum x = C $ show x
+  fromEnum = undefined
+
+instance Series LTX where
+  sigma = Sigma
+  aPi = APi
+  intBound = IntegralBound
+  int = Integral
 
 n :: Num a => a -> a
 n = negate

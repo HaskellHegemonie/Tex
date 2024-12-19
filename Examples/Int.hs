@@ -46,3 +46,10 @@ test = generate_
   , asec #x
   , acos (r #x)
   ]
+
+
+c = generate_
+  [ #x & \x -> 4 * x ** 2
+  , int #x 0 1 (\x -> 4 * x ** 2)
+  , #x & \x -> x ** 3 + n 3 * x ** 2 + 2 * x
+  ]
