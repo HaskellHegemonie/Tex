@@ -37,6 +37,7 @@ data LTX = Sum LTX LTX
          | Atan LTX
          | Sinh LTX
          | Cosh LTX
+         | Tanh LTX
          | Asinh LTX
          | Acosh LTX
          | Atanh LTX
@@ -50,14 +51,17 @@ data LTX = Sum LTX LTX
          | Acsc LTX
          | Asec LTX
          | Acot LTX
-         | Sigma LTX LTX LTX (LTX -> LTX)
-         | APi LTX LTX LTX (LTX -> LTX)
-         | IntegralBound LTX LTX LTX (LTX -> LTX)
+         | Lim LTX (LTX -> LTX) LTX
+         | Derivative (LTX -> LTX) LTX
+         | Sigma LTX LTX (LTX -> LTX) LTX
+         | APi LTX LTX (LTX -> LTX) LTX
+         | IntegralBound LTX LTX (LTX -> LTX) LTX
          | Integral (LTX -> LTX) LTX
          | Special String
          | C String
          | Variable String
-         | Fun String [LTX] LTX
+         | FunDef String [LTX] LTX
+         | FunApp String [LTX]
          | LTX :+ LTX
 
 infixl 6 :+
@@ -109,6 +113,7 @@ instance Show LTX where
     Atan x -> printf "\\tan^{-1}\\left(%s\\right)" (show x)
     Sinh x -> printf "\\sinh\\left(%s\\right)" (show x)
     Cosh x -> printf "\\cosh\\left(%s\\right)" (show x)
+    Tanh x -> printf "\\tanh\\left(%s\\right)" (show x)
     Asinh x -> printf "\\sinh^{-1}\\left(%s\\right)" (show x)
     Acosh x -> printf "\\cosh^{-1}\\left(%s\\right)" (show x)
     Atanh x -> printf "\\tanh^{-1}\\left(%s\\right)" (show x)
@@ -122,14 +127,17 @@ instance Show LTX where
     Acsc x -> printf "\\csc^{-1}\\left(%s\\right)" (show x)
     Asec x -> printf "\\sec^{-1}\\left(%s\\right)" (show x)
     Acot x -> printf "\\cot^{-1}\\left(%s\\right)" (show x)
-    Sigma var down up fun -> printf "\\sum_{%s}^{%s} %s" (show down) (show up) (show $ fun var)
-    APi var down up fun -> printf "\\prod_{%s}^{%s} %s" (show down) (show up) (show $ fun var)
+    Lim to fun x -> printf "\\lim_{%s \\rightarrow %s} %s" (show x) (show to) (show $ fun x)
+    Derivative f x -> printf "\\frac{\\rm d}{{\\rm d}%s} %s" (show x) (show $ f x)
+    Sigma down up fun var -> printf "\\sum_{%s}^{%s} %s" (show down) (show up) (show $ fun var)
+    APi down up fun var -> printf "\\prod_{%s}^{%s} %s" (show down) (show up) (show $ fun var)
     Integral f x -> printf "\\int %s d%s" (show $ f x) (show x)
-    IntegralBound var down up fun ->  printf "\\int_{%s}^{%s} %s d%s" (show down) (show up) (show $ fun var) (show var)
+    IntegralBound down up fun var ->  printf "\\int_{%s}^{%s} %s d%s" (show down) (show up) (show $ fun var) (show var)
     Special x -> x
     C x -> x
-    Variable x -> x
-    Fun name args def -> printf "%s(%s) = %s" name (intercalate "," $ map show args) (show def)
+    Variable x -> if length x /= 1 then printf "\\mathrm{%s}" x else x
+    FunDef name args def -> printf "%s(%s) = %s" name (intercalate "," $ map show args) (show def)
+    FunApp name args -> printf "%s(%s)" name (intercalate "," $ map show args)
     (C "0") :+ ib -> printf "{\\rm i}\\cdot%s" (show ib)
     a :+ ib -> printf "%s + {\\rm i}\\cdot%s" (show a) (show ib)
 
@@ -159,6 +167,7 @@ instance Floating LTX where
   atan = Atan
   sinh = Sinh
   cosh = Cosh
+  tanh = Tanh
   asinh = Asinh
   acosh = Acosh
   atanh = Atanh
@@ -167,11 +176,20 @@ instance Enum LTX where
   toEnum x = C $ show x
   fromEnum = undefined
 
+instance SeriesHelper LTX where
+  combineLim = const
+  combineDerive = const
+  combineSigma = const
+  combinePi = const
+
 instance Series LTX where
-  sigma = Sigma
-  aPi = APi
-  intBound = IntegralBound
+  lim to f g = Lim to f (g to)
+  derive = Derivative
+  sigma a b f g = Sigma a b f (g b)
+  aPi a b f g = APi a b f (g b)
+  intBound a b f g = IntegralBound a b f (g b)
   int = Integral
+
 
 n :: Num a => a -> a
 n = negate
