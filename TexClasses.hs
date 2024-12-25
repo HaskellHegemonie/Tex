@@ -75,6 +75,16 @@ instance {-# OVERLAPS #-} Num a => SeriesHelper a where
   combineSigma = (+)
   combinePi = (*)
 
+
+class (Enum a, Fractional a) => Helper a where
+  fac :: a -> a
+  binom :: a -> a -> a
+  binom x y = fac x * recip (fac y * fac (x + negate y))
+  {-# MINIMAL fac #-}
+
+instance {-# OVERLAPS #-} (Enum a, Fractional a) => Helper a where
+  fac x = product [1..x]
+
 lim_ :: (Series a, SeriesHelper a) => a -> (a -> a) -> a -> a
 lim_ a f x = lim a f (combineLim x)
 derive_ :: (Series a, SeriesHelper a) => a -> (a -> a) -> a -> a
