@@ -87,8 +87,6 @@ data LTX = Sum LTX LTX
          | LTX := LTX
          | LTX :+ LTX
 
-i x = 0 :+ x
-
 infixl 4 :=
 infixl 6 :+
 
@@ -196,7 +194,10 @@ instance Num LTX where
 
 instance Fractional LTX where
   recip = Recip
-  fromRational x = C $ show x
+  fromRational x = num * r denom
+    where
+      (a:_:b:_) = words $ show x
+      [num, denom] = map C [a, b]
 
 instance Floating LTX where
   pi = Special "\\pi"
@@ -221,6 +222,9 @@ instance Enum LTX where
   toEnum x = C $ show x
   fromEnum = undefined
 
+instance Imaginary LTX LTX where
+  a +: b = a :+ b
+
 instance SeriesHelper LTX where
   combineLim = const
   combineDerive = const
@@ -234,16 +238,6 @@ instance Series LTX where
   aPi a b f g = APi a b f (g b)
   intBound a b f g = IntegralBound a b f (g b)
   int = Integral
-
-
-n :: Num a => a -> a
-n = negate
-
-r :: Fractional a => a -> a
-r = recip
-
-ln :: Floating a => a -> a
-ln = log
 
 instance PM LTX LTX where
   (±) = PlusMinus

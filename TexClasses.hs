@@ -3,6 +3,27 @@
 {-# LANGUAGE FunctionalDependencies #-}
 module TexClasses where
 import Data.Function
+import Data.Complex qualified as Complex
+
+n :: Num a => a -> a
+n = negate
+
+r :: Fractional a => a -> a
+r = recip
+
+ln :: Floating a => a -> a
+ln = log
+
+
+class Imaginary a b | b -> a where
+  (+:) :: a -> a -> b
+
+infixl 6 +:
+instance Imaginary a (Complex.Complex a) where
+  a +: b = a Complex.:+ b
+
+i x = 0 +: x
+
 class PM a out | a -> out where
   (±) :: a -> a -> out
 
