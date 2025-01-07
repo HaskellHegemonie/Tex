@@ -8,8 +8,10 @@ module Tex
   , module Tex
   , module GHC.OverloadedLabels
            )where
-import Data.Char
+
 import TexClasses
+
+import Data.Char
 import Data.List
 import Text.Printf
 import GHC.OverloadedLabels
@@ -80,6 +82,11 @@ data LTX = Sum LTX LTX
          | Faculty LTX
          | Binom LTX LTX
          | Brace LTX
+         | Union LTX LTX
+         | Intersec LTX LTX
+         | Wedge LTX LTX
+         | Vee LTX LTX
+
          | Special String
          | C String
          | Variable String
@@ -164,6 +171,11 @@ instance Show LTX where
     Faculty x -> printf "%s!" (paren F x)
     Binom x y -> undefined
     Brace x -> printf "\\left(%s\\right)" (show x)
+    Union x y -> printf "%s \\cup %s" (show x) (show y)
+    Intersec x y -> printf "%s \\cap %s" (show x) (show y)
+    Wedge x y -> printf "%s \\wedge %s" (show x) (show y)
+    Vee x y -> printf "%s \\vee %s" (show x) (show y)
+
     Special x -> x
     C x -> x
     Variable x -> if length (filter isLetter x) /= 1 then printf "\\mathrm{%s}" x else x
@@ -220,7 +232,9 @@ instance Floating LTX where
 
 instance Enum LTX where
   toEnum x = C $ show x
-  fromEnum = undefined
+  fromEnum = \case
+    C x -> read x
+    _ -> undefined
 
 instance Imaginary LTX LTX where
   a +: b = a :+ b
@@ -260,6 +274,20 @@ instance Helper LTX where
   fac = Faculty
   binom = Binom
 
+
+toMatrix :: [[LTX]] -> String
+toMatrix xs = intercalate "\\\\" $ map (intercalate " & " . map (show)) xs
+matrix = Special . printf "\\begin{matrix} %s \\end{matrix}" . toMatrix
+pmatrix = Special . printf "\\begin{pmatrix} %s \\end{pmatrix}" . toMatrix
+bmatrix = Special . printf "\\begin{bmatrix} %s \\end{bmatrix}" . toMatrix
+cmatrix = Special . printf "\\begin{cmatrix} %s \\end{cmatrix}" . toMatrix
+
 generate :: [LTX] -> String
 generate = concatMap (\x -> printf "\\[ %s \\]\n" $ show x)
 generate_ = putStr . generate
+
+
+(∪) = Union
+(∩) = Intersec
+(∧) = Wedge
+(∨) = Vee
